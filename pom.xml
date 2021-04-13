@@ -3,7 +3,7 @@
     <groupId>fightpredictor</groupId>
     <artifactId>FightPredictor</artifactId>
     <name>Slay-I</name>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
     <description>Uses machine learning to predict the outcome of fights. Evaluates cards using average damaged saved in a fight, weighted more heavily towards bosses and elites</description>
 
     <properties>
@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <SlayTheSpire.version>01-27-2020</SlayTheSpire.version>
         <ModTheSpire.version>3.8.0</ModTheSpire.version>
-        <Steam.path>C:/Program Files (x86)/Steam/steamapps</Steam.path>
+        <Steam.path>D:/SteamLibrary/steamapps</Steam.path>
     </properties>
 
     <repositories>
@@ -49,12 +49,12 @@
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>tensorflow-core-platform</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
-            <artifactId>tensorflow-tools</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <artifactId>ndarray</artifactId>
+            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>

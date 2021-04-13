@@ -24,7 +24,15 @@ public class ShopScreenPatches {
             List<AbstractCard> allCards = new ArrayList<>();
             allCards.addAll(coloredCards);
             allCards.addAll(colorlessCards);
-
+            List<AbstractCard> upgrades = new ArrayList<>(); // To avoid infinte looping with Searing Blow
+            for (AbstractCard c : allCards) { // Call up a copy of Upgraded version of card for extra statistics
+                if(c.canUpgrade()) {
+                    AbstractCard copy = c.makeCopy();
+                    copy.upgrade();
+                    upgrades.add(copy);
+                }
+            }
+            allCards.addAll(upgrades);
             FightPredictor.cardChoicesEvaluations = CardEvaluationData.createByAdding(allCards, AbstractDungeon.actNum, Math.min(AbstractDungeon.actNum + 1, 4));
         }
     }

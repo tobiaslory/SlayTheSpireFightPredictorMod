@@ -1,16 +1,12 @@
 package FightPredictor.ml;
 
 import FightPredictor.FightPredictor;
-import com.badlogic.gdx.Gdx;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
-import com.megacrit.cardcrawl.localization.RunModStrings;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 
-import java.io.FileReader;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;

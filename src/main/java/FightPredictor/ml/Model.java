@@ -5,13 +5,10 @@ import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Tensor;
 import org.tensorflow.proto.framework.SignatureDef;
 import org.tensorflow.proto.framework.TensorInfo;
-import org.tensorflow.tools.ndarray.FloatNdArray;
-import org.tensorflow.tools.ndarray.impl.dense.FloatDenseNdArray;
+import org.tensorflow.ndarray.FloatNdArray;
 import org.tensorflow.types.TFloat32;
-import org.tensorflow.tools.ndarray.StdArrays;
+import org.tensorflow.ndarray.StdArrays;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

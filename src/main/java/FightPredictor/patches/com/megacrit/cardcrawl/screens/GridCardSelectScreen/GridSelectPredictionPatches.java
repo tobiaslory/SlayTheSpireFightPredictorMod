@@ -19,7 +19,7 @@ import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
 public class GridSelectPredictionPatches {
     @SpirePatch(clz = GridCardSelectScreen.class, method = "render")
@@ -103,7 +103,16 @@ public class GridSelectPredictionPatches {
     public static class EvaluateLibraryCards {
         @SpireInsertPatch(locator = Locator.class, localvars = {"group"})
         public static void patch(TheLibrary __instance, int buttonEffect, CardGroup group) {
-            FightPredictor.cardChoicesEvaluations = CardEvaluationData.createByAdding(group.group, AbstractDungeon.actNum, Math.min(AbstractDungeon.actNum + 1, 4));
+            List<AbstractCard> upgrades = new ArrayList<>(); // To avoid infinte looping with Searing Blow
+            for (AbstractCard c : group.group) { // Call up a copy of Upgraded version of card for extra statistics
+                if(c.canUpgrade()) {
+                    AbstractCard copy = c.makeCopy();
+                    copy.upgrade();
+                    upgrades.add(copy);
+                }
+            }
+            upgrades.addAll(group.group);
+            FightPredictor.cardChoicesEvaluations = CardEvaluationData.createByAdding(upgrades, AbstractDungeon.actNum, Math.min(AbstractDungeon.actNum + 1, 4));
         }
 
         private static class Locator extends SpireInsertLocator {

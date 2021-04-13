@@ -22,21 +22,18 @@ public class CardEvaluationData {
     private final Set<Integer> supportedActs;
 
     private CardEvaluationData(int startingAct, int endingAct) {
+        this(startingAct, endingAct, AbstractDungeon.player.masterDeck.group);
+    }
+
+    private CardEvaluationData(int startingAct, int endingAct, List<AbstractCard> deck) {
         this.supportedActs = new HashSet<>();
         for (int act = startingAct; act <= endingAct; act++) {
             this.supportedActs.add(act);
         }
 
         Set<String> enemies = getAllEnemies(startingAct, endingAct);
-        this.skip = new StatEvaluation(
-            AbstractDungeon.player.masterDeck.group,
-            AbstractDungeon.player.relics,
-            AbstractDungeon.player.maxHealth,
-            AbstractDungeon.player.currentHealth,
-            AbstractDungeon.ascensionLevel,
-            false,
-            enemies
-        );
+        this.skip = new StatEvaluation(deck, AbstractDungeon.player.relics, AbstractDungeon.player.maxHealth,
+                AbstractDungeon.player.currentHealth, AbstractDungeon.ascensionLevel, false, enemies);
 
         this.evals = new HashMap<>();
         this.diffs = new HashMap<>();
@@ -44,11 +41,15 @@ public class CardEvaluationData {
     }
 
     /**
-     * Create a full evaluation of the given cards by evaluating a deck with each card added compared to skip, against enemies in
-     * startingAct to endingAct inclusive. Additional acts can be added later if needed.
-     * @param cardsToAdd Cards to evaluate adding to the deck
-     * @param startingAct Act to start evaluating enemies. Inclusive. Must be 1-4 inclusive
-     * @param endingAct Act to end evaluating enmies. Inclusive. Must be 1-4 inclusive and greater than or equal to startingAct
+     * Create a full evaluation of the given cards by evaluating a deck with each
+     * card added compared to skip, against enemies in startingAct to endingAct
+     * inclusive. Additional acts can be added later if needed.
+     * 
+     * @param cardsToAdd  Cards to evaluate adding to the deck
+     * @param startingAct Act to start evaluating enemies. Inclusive. Must be 1-4
+     *                    inclusive
+     * @param endingAct   Act to end evaluating enmies. Inclusive. Must be 1-4
+     *                    inclusive and greater than or equal to startingAct
      * @return CardEvaluationData with predictions and scores completed evaluation
      */
     public static CardEvaluationData createByAdding(List<AbstractCard> cardsToAdd, int startingAct, int endingAct) {
@@ -58,14 +59,62 @@ public class CardEvaluationData {
         return createByFunction(cardsToAdd, dm, startingAct, endingAct);
     }
 
-    public static CardEvaluationData createByRemoving(List<AbstractCard> cardsToRemove, int startingAct, int endingAct) {
+    public static CardEvaluationData createByRemoving(List<AbstractCard> cardsToRemove, int startingAct,
+            int endingAct) {
         DeckManipulation dm = (deck, card) -> {
             deck.remove(card);
         };
-        return createByFunction(cardsToRemove, dm, startingAct, endingAct);
+        Set<String> enemies = getAllEnemies(startingAct, endingAct);
+        CardEvaluationData ced = new CardEvaluationData(startingAct, endingAct);
+        for (AbstractCard c : cardsToRemove) {
+            // Modify the deck
+            List<AbstractCard> newDeck = new ArrayList<>(AbstractDungeon.player.masterDeck.group);
+            dm.modifyDeck(newDeck, c);
+
+            // Run stat evaluation
+            StatEvaluation se = new StatEvaluation(newDeck, AbstractDungeon.player.relics,
+                    AbstractDungeon.player.maxHealth, AbstractDungeon.player.currentHealth,
+                    AbstractDungeon.ascensionLevel, false, enemies);
+            ced.evals.put(c, se);
+
+            // Calculate score for each act by comparing to skip
+            Map<Integer, Float> diffsByAct = new HashMap<>();
+            for (int act = startingAct; act <= endingAct; act++) {
+                float diff = StatEvaluation.getWeightedAvg(se, ced.skip, act);
+                diffsByAct.put(act, diff);
+            }
+            ced.diffs.put(c, diffsByAct);
+
+            if (c.canUpgrade()) {
+                List<AbstractCard> newDeckUpgraded = new ArrayList<>(AbstractDungeon.player.masterDeck.group);
+                newDeckUpgraded.remove(c);
+                AbstractCard upgraded = c.makeCopy();
+                upgraded.upgrade();
+                newDeckUpgraded.add(upgraded);
+                CardEvaluationData cedUpgraded = new CardEvaluationData(startingAct, endingAct, newDeckUpgraded);
+                List<AbstractCard> newDeckUpgradedRemoved = new ArrayList<>(newDeckUpgraded);
+                dm.modifyDeck(newDeckUpgradedRemoved, upgraded);
+
+                // Run stat evaluation
+                StatEvaluation seUpgraded = new StatEvaluation(newDeckUpgradedRemoved, AbstractDungeon.player.relics,
+                        AbstractDungeon.player.maxHealth, AbstractDungeon.player.currentHealth,
+                        AbstractDungeon.ascensionLevel, false, enemies);
+                ced.evals.put(upgraded, seUpgraded);
+
+                // Calculate score for each act by comparing to skip
+                Map<Integer, Float> diffsByActUpgraded = new HashMap<>();
+                for (int act = startingAct; act <= endingAct; act++) {
+                    float diff = StatEvaluation.getWeightedAvg(seUpgraded, cedUpgraded.skip, act);
+                    diffsByActUpgraded.put(act, diff);
+                }
+                ced.diffs.put(upgraded, diffsByActUpgraded);
+            }
+        }
+        return ced;
     }
 
-    public static CardEvaluationData createByUpgrading(List<AbstractCard> cardsToUpgrade, int startingAct, int endingAct) {
+    public static CardEvaluationData createByUpgrading(List<AbstractCard> cardsToUpgrade, int startingAct,
+            int endingAct) {
         DeckManipulation dm = (deck, card) -> {
             deck.remove(card);
             AbstractCard upgradedCard = card.makeCopy();
@@ -79,7 +128,8 @@ public class CardEvaluationData {
         void modifyDeck(List<AbstractCard> originalDeck, AbstractCard c);
     }
 
-    private static CardEvaluationData createByFunction(List<AbstractCard> cardsToChange, DeckManipulation dm, int startingAct, int endingAct) {
+    private static CardEvaluationData createByFunction(List<AbstractCard> cardsToChange, DeckManipulation dm,
+            int startingAct, int endingAct) {
         CardEvaluationData ced = new CardEvaluationData(startingAct, endingAct);
         Set<String> enemies = getAllEnemies(startingAct, endingAct);
 
@@ -89,15 +139,9 @@ public class CardEvaluationData {
             dm.modifyDeck(newDeck, c);
 
             // Run stat evaluation
-            StatEvaluation se = new StatEvaluation(
-                    newDeck,
-                    AbstractDungeon.player.relics,
-                    AbstractDungeon.player.maxHealth,
-                    AbstractDungeon.player.currentHealth,
-                    AbstractDungeon.ascensionLevel,
-                    false,
-                    enemies
-            );
+            StatEvaluation se = new StatEvaluation(newDeck, AbstractDungeon.player.relics,
+                    AbstractDungeon.player.maxHealth, AbstractDungeon.player.currentHealth,
+                    AbstractDungeon.ascensionLevel, false, enemies);
             ced.evals.put(c, se);
 
             // Calculate score for each act by comparing to skip

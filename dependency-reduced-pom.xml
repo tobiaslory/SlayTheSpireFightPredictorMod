@@ -4,7 +4,7 @@
   <groupId>fightpredictor</groupId>
   <artifactId>FightPredictor</artifactId>
   <name>Slay-I</name>
-  <version>1.0.3</version>
+  <version>1.1.0</version>
   <description>Uses machine learning to predict the outcome of fights. Evaluates cards using average damaged saved in a fight, weighted more heavily towards bosses and elites</description>
   <build>
     <resources>
@@ -100,7 +100,7 @@
   </dependencies>
   <properties>
     <ModTheSpire.version>3.8.0</ModTheSpire.version>
-    <Steam.path>C:/Program Files (x86)/Steam/steamapps</Steam.path>
+    <Steam.path>D:/SteamLibrary/steamapps</Steam.path>
     <maven.compiler.source>1.8</maven.compiler.source>
     <SlayTheSpire.version>01-27-2020</SlayTheSpire.version>
     <maven.compiler.target>1.8</maven.compiler.target>

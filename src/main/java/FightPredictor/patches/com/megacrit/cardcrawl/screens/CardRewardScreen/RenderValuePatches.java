@@ -1,6 +1,8 @@
 package FightPredictor.patches.com.megacrit.cardcrawl.screens.CardRewardScreen;
 
 import FightPredictor.FightPredictor;
+import basemod.devcommands.fight.Fight;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.evacipated.cardcrawl.modthespire.lib.*;
@@ -15,16 +17,14 @@ import com.megacrit.cardcrawl.screens.CardRewardScreen;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Map;
 
 import static FightPredictor.util.HelperMethods.formatNum;
 
 public class RenderValuePatches {
-    private static final UIStrings uiStrings = CardCrawlGame.languagePack.getUIString(FightPredictor.CARD_REWARD_VALUE_PREDICTION_ID);
+    private static final UIStrings uiStrings = CardCrawlGame.languagePack
+            .getUIString(FightPredictor.CARD_REWARD_VALUE_PREDICTION_ID);
     private static final String curActPredictionText = uiStrings.TEXT[0];
     private static final String nextActPredictionText = uiStrings.TEXT[1];
     private static final String percentileText = uiStrings.TEXT[2];
@@ -47,33 +47,68 @@ public class RenderValuePatches {
                 return;
             }
             Map<AbstractCard, Map<Integer, Float>> scores = FightPredictor.cardChoicesEvaluations.getDiffs();
-            for(AbstractCard c : __instance.rewardGroup) {
+            //for(AbstractCard c: scores.keySet())
+            //    FightPredictor.logger.info(c.name);
+            for (AbstractCard c : __instance.rewardGroup) {
 
                 if (scores.containsKey(c)) {
-                    Map<Integer, Float> scoresByAct = scores.get(c);
+                    if (c.canUpgrade()) { // Shows upgraded card statistics
+                        Map<Integer, Float> scoresByAct = scores.get(c);
+                        AbstractCard upgraded = c.makeCopy();
+                        upgraded.upgrade();
+                        for (AbstractCard uc: scores.keySet())
+                            if (upgraded.name.equals(uc.name)) {
+                                //FightPredictor.logger.info("success");
+                                upgraded = uc;
+                                break;
+                            }
+                        Map<Integer, Float> scoresByActUpgraded = scores.get(upgraded);
+                        //for (float f: scoresByActUpgraded.values())
+                        //    FightPredictor.logger.info(f);
 
-                    float curActScore;
-                    if (AbstractDungeon.floorNum == 16 || AbstractDungeon.floorNum == 33) {
-                        curActScore = 9999f;
+                        float curActScore;
+                        float curActScoreUpgraded;
+                        if (AbstractDungeon.floorNum == 16 || AbstractDungeon.floorNum == 33) {
+                            curActScore = 9999f;
+                            curActScoreUpgraded = 9999f;
+                        } else {
+                            curActScore = scoresByAct.get(AbstractDungeon.actNum);
+                            curActScoreUpgraded = scoresByActUpgraded.get(AbstractDungeon.actNum);
+                        }
+
+                        float nextAct;
+                        float nextActUpgraded;
+                        nextAct = scoresByAct.getOrDefault(AbstractDungeon.actNum + 1, 9999f);
+                        nextActUpgraded = scoresByActUpgraded.getOrDefault(AbstractDungeon.actNum + 1, 9999f);
+
+                        int percentile = FightPredictor.percentiles.getOrDefault(c.name, Integer.MAX_VALUE);
+
+                        FontHelper.renderSmartText(sb, FontHelper.topPanelAmountFont,
+                                curActPredictionText + ": TAB " + formatNum(curActScore) + " | " + formatNum(curActScoreUpgraded) + " NL "
+                                        + nextActPredictionText + ": TAB " + formatNum(nextAct) + " | " + formatNum(nextActUpgraded) + " NL "
+                                        + percentileText + ":   " + formatPercentile(percentile),
+                                c.hb.x, c.hb.y - heightBuffer, Color.WHITE);
                     } else {
-                        curActScore = scoresByAct.get(AbstractDungeon.actNum);
+                        Map<Integer, Float> scoresByAct = scores.get(c);
+
+                        float curActScore;
+                        if (AbstractDungeon.floorNum == 16 || AbstractDungeon.floorNum == 33) {
+                            curActScore = 9999f;
+                        } else {
+                            curActScore = scoresByAct.get(AbstractDungeon.actNum);
+                        }
+
+                        float nextAct;
+                        nextAct = scoresByAct.getOrDefault(AbstractDungeon.actNum + 1, 9999f);
+
+                        int percentile = FightPredictor.percentiles.getOrDefault(c.name, Integer.MAX_VALUE);
+
+                        FontHelper.renderSmartText(sb, FontHelper.topPanelAmountFont,
+                                curActPredictionText + ": TAB " + formatNum(curActScore) + " NL "
+                                        + nextActPredictionText + ": TAB " + formatNum(nextAct) + " NL "
+                                        + percentileText + ":   " + formatPercentile(percentile),
+                                c.hb.x, c.hb.y - heightBuffer, Color.WHITE);
                     }
-
-                    float nextAct;
-                    nextAct = scoresByAct.getOrDefault(AbstractDungeon.actNum + 1, 9999f);
-
-                    int percentile = FightPredictor.percentiles.getOrDefault(c.name, Integer.MAX_VALUE);
-
-                    FontHelper.renderSmartText(sb,
-                            FontHelper.topPanelAmountFont,
-                            curActPredictionText + ": TAB " + formatNum(curActScore)
-                                    + " NL "
-                                    + nextActPredictionText + ": TAB " + formatNum(nextAct)
-                                    + " NL "
-                                    + percentileText + ":   " + formatPercentile(percentile),
-                            c.hb.x,
-                            c.hb.y - heightBuffer,
-                            Color.WHITE);
                 }
             }
         }
@@ -91,7 +126,7 @@ public class RenderValuePatches {
                 return num + "st";
             } else if (Integer.toString(num).endsWith("2")) {
                 return num + "nd";
-            } else if (Integer.toString(num).endsWith("3")){
+            } else if (Integer.toString(num).endsWith("3")) {
                 return num + "rd";
             } else {
                 return num + "th";
@@ -104,7 +139,6 @@ public class RenderValuePatches {
                 return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<>(), finalMatcher);
             }
         }
-
 
     }
 }

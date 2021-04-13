@@ -1,6 +1,5 @@
 package FightPredictor.patches.com.megacrit.cardcrawl.ui.buttons;
 
-import FightPredictor.FightPredictor;
 import basemod.ReflectionHacks;
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.megacrit.cardcrawl.core.Settings;
